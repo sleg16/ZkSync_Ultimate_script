@@ -1,0 +1,5 @@
+{
+    "withdraw_amount": "0.005",
+    "delay_between_txns": "10",
+    "gas": "2000000"
+}
