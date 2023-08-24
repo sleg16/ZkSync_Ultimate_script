@@ -3,7 +3,6 @@ import time
 from web3 import Web3
 from loguru import logger
 
-
 with open('config.json', 'r') as f:
     config = json.load(f)
 
@@ -38,16 +37,19 @@ choice = input("Введите 1 для проверки баланса ETH ил
 if choice == "1":
     for private_key in private_keys:
         address = web3.to_checksum_address(web3.eth.account.from_key(private_key=private_key).address)
-        balance = web3.eth.get_balance(address)
-        eth_balance = round(Web3.from_wei(balance, 'ether'),6)
+        eth_balance = Web3.from_wei(web3.eth.get_balance(address), 'ether')
         logger.success(f"Баланс адреса {address}: {eth_balance} ETH")
+
 elif choice == "2":
     for private_key, okex_address in zip(private_keys, okex_addresses):
         wallet_address = web3.to_checksum_address(web3.eth.account.from_key(private_key=private_key).address)
-        transaction = build_txn(web3=web3, from_address=wallet_address, to_address=okex_address, amount=withdraw_amount)
-        signed_txn = web3.eth.account.sign_transaction(transaction, private_key)
-        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-        logger.success(f"Транзакция отправлена с {wallet_address} на {okex_address} с хешем {txn_hash.hex()}")
-        time.sleep(delay_between_txns)
+        if Web3.from_wei(web3.eth.get_balance(wallet_address), 'ether') > withdraw_amount:
+            transaction = build_txn(web3=web3, from_address=wallet_address, to_address=okex_address, amount=withdraw_amount)
+            signed_txn = web3.eth.account.sign_transaction(transaction, private_key)
+            txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            logger.success(f"Транзакция отправлена с {wallet_address} на {okex_address} с хешем {txn_hash.hex()}")
+            time.sleep(delay_between_txns)
+        else:
+            logger.error(f"Сумма вывода {withdraw_amount} ETH превышает баланс на кошельке {wallet_address}")
 elif choice == "q":
     logger.info("Скрипт завершён")
